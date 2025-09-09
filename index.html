@@ -9,7 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <style>
-        /* CSS is complete and unchanged */
+        /* Complete CSS */
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f4f4f9; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
         .auth-wrap { max-width: 420px; width: 90%; margin: 20px auto; background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0, 0, 0, .12); padding: 18px; text-align: left; }
         .auth-tabs { display: flex; gap: 8px; margin-bottom: 10px; }
@@ -27,6 +27,9 @@
         .close-btn { position: absolute; top: 8px; right: 15px; color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; }
         .modal-content h3 { margin-top: 0; }
         .modal-content p { font-size: 14px; color: #555; margin-bottom: 15px; }
+        #alertModal .modal-content { padding-bottom: 15px; }
+        #alertMessage { font-size: 16px; color: #333; margin: 10px 0 20px 0; }
+        #alertOkButton { width: 100px; padding: 10px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
     </style>
 </head>
 <body>
@@ -55,6 +58,7 @@
             <div class="terms-container"><a href="#" onclick="openTerms()">Terms & Privacy</a></div>
         </div>
     </section>
+
     <div id="forgotPasswordModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('forgotPasswordModal')">&times;</span>
@@ -67,9 +71,16 @@
             </div>
         </div>
     </div>
+
+    <div id="alertModal" class="modal">
+        <div class="modal-content">
+            <p id="alertMessage">This is an alert message.</p>
+            <button id="alertOkButton" onclick="closeAlert()">OK</button>
+        </div>
+    </div>
     
     <script>
-        // Complete JavaScript with WebViewString logic
+        // Complete and Correct JavaScript
 
         const firebaseConfig = {
            apiKey: "AIzaSyCSRrZXBlbA9sJ8sTvp0lthjvaqb1PetAA",
@@ -84,29 +95,41 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
+        function showAlert(message) {
+            document.getElementById('alertMessage').textContent = message;
+            document.getElementById('alertModal').style.display = 'block';
+        }
+        function closeAlert() {
+            document.getElementById('alertModal').style.display = 'none';
+        }
+
         function showTab(tabName) {
             document.getElementById("tabLogin").classList.toggle("active", tabName === 'login');
             document.getElementById("tabSignup").classList.toggle("active", tabName === 'signup');
             document.getElementById("loginForm").style.display = tabName === 'login' ? "block" : "none";
             document.getElementById("signupForm").style.display = tabName === 'signup' ? "block" : "none";
         }
-        function openModal(modalId) { document.getElementById(modalId).style.display = "block"; }
-        function closeModal(modalId) { document.getElementById(modalId).style.display = "none"; }
-        function openTerms() { alert("Terms and Privacy policies page should open here."); }
+        function openModal(modalId) { 
+            document.getElementById(modalId).style.display = "block"; 
+        }
+        function closeModal(modalId) { 
+            document.getElementById(modalId).style.display = "none"; 
+        }
+        function openTerms() { 
+            showAlert("Terms and Privacy policies page should open here.");
+        }
 
         function doLogin() {
             const email = document.getElementById("loginEmail").value.trim();
             const password = document.getElementById("loginPassword").value.trim();
-            if (!email || !password) return alert("Please enter both email and password.");
+            if (!email || !password) return showAlert("Please enter both email and password.");
             
             auth.signInWithEmailAndPassword(email, password)
                 .then(() => {
-                    // Send message to Kodular
                     if (window.AppInventor && typeof window.AppInventor.setWebViewString === 'function') {
                         window.AppInventor.setWebViewString("login_success");
                     } else {
-                        // Fallback for testing in a normal browser
-                        alert("Login Successful! (Running outside Kodular)");
+                        showAlert("Login Successful! (Running outside Kodular)");
                     }
                 })
                 .catch(error => {
@@ -121,7 +144,7 @@
                             userMessage = "The email format is incorrect. Please check your email.";
                             break;
                     }
-                    alert(userMessage);
+                    showAlert(userMessage);
                 });
         }
 
@@ -129,7 +152,7 @@
             const username = document.getElementById("signupUsername").value.trim();
             const email = document.getElementById("signupEmail").value.trim();
             const password = document.getElementById("signupPassword").value.trim();
-            if (!username || !email || !password) return alert("Please fill all fields.");
+            if (!username || !email || !password) return showAlert("Please fill all fields.");
             
             auth.createUserWithEmailAndPassword(email, password).then(userCredential => {
                 db.collection("users").doc(userCredential.user.uid).set({
@@ -137,12 +160,10 @@
                     joinCount: 0, achievements: [], role: "user",
                     lastLogin: firebase.firestore.FieldValue.serverTimestamp()
                 }).then(() => {
-                    // Send message to Kodular
                     if (window.AppInventor && typeof window.AppInventor.setWebViewString === 'function') {
                         window.AppInventor.setWebViewString("login_success");
                     } else {
-                        // Fallback for testing in a normal browser
-                        alert("Signup Successful! (Running outside Kodular)");
+                        showAlert("Signup Successful! (Running outside Kodular)");
                     }
                 });
             }).catch(error => {
@@ -158,17 +179,17 @@
                         userMessage = "The email format is incorrect. Please enter a valid email.";
                         break;
                 }
-                alert(userMessage);
+                showAlert(userMessage);
             });
         }
 
         function handlePasswordReset() {
             const email = document.getElementById('resetEmail').value.trim();
-            if (!email) return alert("Please enter your email address.");
+            if (!email) return showAlert("Please enter your email address.");
 
             auth.sendPasswordResetEmail(email)
                 .then(() => {
-                    alert("Password reset email sent! Please check your inbox.");
+                    showAlert("Password reset email sent! Please check your inbox.");
                     closeModal('forgotPasswordModal');
                 })
                 .catch((error) => {
@@ -176,9 +197,9 @@
                     if (error.code === 'auth/user-not-found') {
                         userMessage = "No account is registered with this email address.";
                     }
-                    alert(userMessage);
+                    showAlert(userMessage);
                 });
         }
     </script>
 </body>
-    </html>
+</html>
