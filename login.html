@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>24/7 Spin Lucky Draw — Login</title>
+    <!-- Firebase Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <style>
+        /* CSS Code from your original file */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .auth-wrap {
+            max-width: 420px;
+            width: 90%;
+            margin: 20px auto;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, .12);
+            padding: 18px;
+            text-align: left;
+        }
+
+        .auth-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .auth-tabs button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            background: #e9ecef;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .auth-tabs button.active {
+            background: #28a745;
+            color: #fff;
+        }
+
+        .auth-form label {
+            display: block;
+            font-size: 13px;
+            margin-top: 8px;
+            color: #222;
+        }
+
+        .auth-form input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            margin-top: 4px;
+            box-sizing: border-box;
+        }
+
+        .auth-form .auth-btn {
+            width: 100%;
+            margin-top: 12px;
+            background: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 10px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        /* UPDATED: Centered the Forgot Password link */
+        .forgot-link-container {
+            text-align: center; /* Changed from 'right' to 'center' */
+            margin-top: 15px; /* Added some space */
+        }
+        .forgot-link {
+            font-size: 13px;
+            color: #28a745;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .forgot-link:hover {
+            text-decoration: underline;
+        }
+
+        .terms-container {
+             text-align:center; 
+             margin-top: 20px; 
+             font-size: 14px;
+        }
+        
+        /* NEW: Styles for the Professional Modal */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+        }
+        .modal-content {
+            background-color: #fff;
+            margin: 25% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+        .close-btn {
+            position: absolute;
+            top: 8px;
+            right: 15px;
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .modal-content h3 {
+            margin-top: 0;
+        }
+        .modal-content p {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HTML Structure for Login/Signup -->
+    <section id="authSection">
+        <div class="auth-wrap">
+            <div class="auth-tabs">
+                <button id="tabLogin" class="active" onclick="showTab('login')">Login</button>
+                <button id="tabSignup" onclick="showTab('signup')">Signup</button>
+            </div>
+            
+            <div id="loginForm" class="auth-form">
+                <label>Email</label><input type="email" id="loginEmail" placeholder="you@example.com" />
+                <label>Password</label><input type="password" id="loginPassword" placeholder="Enter password" />
+                <button class="auth-btn" onclick="doLogin()">Login</button>
+                <div class="forgot-link-container">
+                    <a class="forgot-link" onclick="openModal('forgotPasswordModal')">Forgot Password?</a>
+                </div>
+            </div>
+            
+            <div id="signupForm" class="auth-form" style="display:none;">
+                <label>Username</label><input type="text" id="signupUsername" placeholder="Choose a public username" />
+                <label>Email</label><input type="email" id="signupEmail" placeholder="you@example.com" />
+                <label>Password</label><input type="password" id="signupPassword" placeholder="Choose password" />
+                <button class="auth-btn" onclick="doSignup()">Create account</button>
+            </div>
+            
+            <div class="terms-container"><a href="#" onclick="openTerms()">Terms & Privacy</a></div>
+        </div>
+    </section>
+
+    <!-- NEW: Forgot Password Modal -->
+    <div id="forgotPasswordModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('forgotPasswordModal')">&times;</span>
+            <h3>Reset Password</h3>
+            <p>Enter your email address and we will send you a link to reset your password.</p>
+            <div class="auth-form">
+                <label style="text-align: left;">Email</label>
+                <input type="email" id="resetEmail" placeholder="Enter your registered email" />
+                <button class="auth-btn" onclick="handlePasswordReset()">Send Reset Link</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // --- JavaScript for Login/Signup Page ---
+
+        // 1. Firebase Configuration
+        const firebaseConfig = {
+           apiKey: "AIzaSyCSRrZXBlbA9sJ8sTvp0lthjvaqb1PetAA",
+           authDomain: "spingame-128e4.firebaseapp.com",
+           databaseURL: "https://spingame-128e4-default-rtdb.firebaseio.com",
+           projectId: "spingame-128e4",
+           storageBucket: "spingame-128e4.appspot.com",
+           messagingSenderId: "949432242610",
+           appId: "1:949432242610:web:27b223e1a210f024d514ab",
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // 2. Tab Switching Function
+        function showTab(tabName) {
+            document.getElementById("tabLogin").classList.toggle("active", tabName === 'login');
+            document.getElementById("tabSignup").classList.toggle("active", tabName === 'signup');
+            document.getElementById("loginForm").style.display = tabName === 'login' ? "block" : "none";
+            document.getElementById("signupForm").style.display = tabName === 'signup' ? "block" : "none";
+        }
+        
+        // NEW: Modal Functions
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = "block";
+        }
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = "none";
+        }
+
+        // 3. Login Function (with redirection)
+        function doLogin() {
+            const email = document.getElementById("loginEmail").value.trim();
+            const password = document.getElementById("loginPassword").value.trim();
+            if (!email || !password) return alert("Enter email & password.");
+            
+            auth.signInWithEmailAndPassword(email, password)
+                .then(() => { window.location.href = 'app.html'; })
+                .catch(error => alert("Error: " + error.message));
+        }
+
+        // 4. Signup Function (with redirection)
+        function doSignup() {
+            const username = document.getElementById("signupUsername").value.trim();
+            const email = document.getElementById("signupEmail").value.trim();
+            const password = document.getElementById("signupPassword").value.trim();
+            if (!username || !email || !password) return alert("Please fill all fields.");
+            
+            auth.createUserWithEmailAndPassword(email, password).then(userCredential => {
+                db.collection("users").doc(userCredential.user.uid).set({
+                    username: username, email: email, coins: 100, level: 1, xp: 0,
+                    joinCount: 0, achievements: [], role: "user",
+                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                }).then(() => { window.location.href = 'app.html'; });
+            }).catch(error => alert("Error: " + error.message));
+        }
+
+        // 5. UPDATED: Password Reset Logic
+        function handlePasswordReset() {
+            const email = document.getElementById('resetEmail').value.trim();
+            if (!email) return alert("Please enter your email address.");
+
+            auth.sendPasswordResetEmail(email)
+                .then(() => {
+                    alert("Password reset email sent successfully! Please check your inbox.");
+                    closeModal('forgotPasswordModal'); // Close the modal on success
+                })
+                .catch((error) => {
+                    alert("Error sending reset email: " + error.message);
+                });
+        }
+
+        // 6. Placeholder for Terms function
+        function openTerms() {
+            alert("Terms and Privacy policies page should open here.");
+        }
+    </script>
+</body>
+</html>```
