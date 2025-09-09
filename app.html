@@ -1,0 +1,433 @@
+<!-- FINAL VERSION: NO HEADER, LOGOUT AT BOTTOM, MOBILE-FRIENDLY -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>24/7 Spin Lucky Draw — Fun Coins</title>
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <style>
+        body{font-family:Arial,sans-serif;margin:0;padding:0;background:#f4f4f9;text-align:center}
+        
+        /* HEADER IS REMOVED */
+
+        .wallet-box{margin:15px auto;padding:10px;width:90%;max-width:400px;border-radius:6px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+        .wallet-balance{display:flex;align-items:center;justify-content:center;gap:8px;font-size:18px;font-weight:700;color:#333;margin-bottom:8px}
+        .wallet-balance::before{content:'';display:inline-block;width:24px;height:24px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Ccircle cx='12' cy='12' r='10' fill='%23FFD700' stroke='%23B8860B' stroke-width='2'/%3E%3Ctext x='12' y='17' font-family='Arial, sans-serif' font-size='14' font-weight='bold' text-anchor='middle' fill='%23B8860B'%3E¢%3C/text%3E%3C/svg%3E");background-size:contain;background-repeat:no-repeat}
+        .wallet-buttons{display: flex; flex-wrap: wrap; justify-content: center;}
+        .wallet-buttons button{margin:4px;padding:8px 12px;border:none;border-radius:5px;cursor:pointer;font-size:13px}
+        .add-btn{background:#28a745;color:#fff}.history-btn{background:#6c757d;color:#fff}.my-ticket-btn{background:#ffc107;color:#212529}
+        
+        .wheel-container {
+            margin: 15px auto;
+            position: relative;
+            width: 80vw;
+            height: 80vw;
+            max-width: 280px;
+            max-height: 280px;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 4px 10px rgba(0,0,0,.2);
+        }
+        .pointer {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%) rotate(180deg);
+            width: 0;
+            height: 0;
+            border-left: 16px solid transparent;
+            border-right: 16px solid transparent;
+            border-bottom: 24px solid #333;
+        }
+        
+        .join-box{margin:10px auto;width:90%;max-width:400px;font-size:13px;border-radius:6px;background:#fff;padding:10px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+        
+        /* LOGOUT BUTTON MOVED TO BOTTOM */
+        .logout-btn{
+            background:#d9534f;
+            color:#fff;
+            border:none;
+            border-radius:8px; /* Slightly more rounded */
+            padding: 12px; /* Bigger padding */
+            cursor:pointer;
+            font-size: 16px; /* Bigger font */
+            font-weight: bold;
+            width: 100%; /* Full width */
+        }
+        .footer-logout-container {
+            margin: 20px auto 15px auto;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .modal{display:none;position:fixed;z-index:1000;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.6)}
+        .modal-content{background:#fff;margin:15% auto;padding:20px;border-radius:10px;width:90%;max-width:400px;text-align:center;box-shadow:0 4px 10px rgba(0,0,0,.3)}
+        .auth-wrap{max-width:420px;margin:40px auto;background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.12);padding:18px;text-align:left}
+        .auth-tabs{display:flex;gap:8px;margin-bottom:10px}.auth-tabs button{flex:1;padding:10px;border:none;border-radius:6px;background:#e9ecef;cursor:pointer;font-weight:600}.auth-tabs button.active{background:#28a745;color:#fff}
+        .auth-form label{display:block;font-size:13px;margin-top:8px;color:#222}.auth-form input{width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;margin-top:4px;box-sizing:border-box}.auth-form .auth-btn{width:100%;margin-top:12px;background:#28a745;color:#fff;border:none;border-radius:6px;padding:10px;cursor:pointer;font-weight:600}
+        .prize-pool{margin:15px auto;padding:10px;width:90%;max-width:400px;border-radius:6px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.1);font-size:14px;color:#222;font-weight:600;text-align:left;line-height:1.6}
+        .proofs-box{margin:15px auto;padding:10px;width:90%;max-width:400px;border-radius:6px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.1); height: 160px; overflow: hidden; position: relative;}
+        .proof-item{padding:6px 10px;font-size:13px;border-bottom:1px solid #eee;color:#555; text-align: left;}
+        #timerDisplay { font-size: 16px; font-weight: bold; color: #d9534f; margin-top: 10px; }
+        .close { cursor: pointer; float: right; font-size: 24px; font-weight: bold; }
+        .level-info { font-size: 12px; color: #666; margin-top: 5px; }
+        .xp-bar { background-color: #e0e0e0; border-radius: 5px; height: 8px; overflow: hidden; margin-top: 4px; }
+        .xp-bar-fill { background-color: #4caf50; height: 100%; width: 0%; border-radius: 5px; transition: width 0.5s ease-in-out; }
+        .achievement-item { border-bottom: 1px solid #eee; padding: 8px; text-align: left; }
+        .achievement-item.unlocked { color: green; font-weight: bold; }
+        .leaderboard-item { display: flex; justify-content: space-between; padding: 6px; border-bottom: 1px solid #eee; }
+        #leaderboardModal .modal-content { background-color: #e8f5e9; }
+        #achievementsModal .modal-content { background-color: #e3f2fd; }
+        .leaderboard-btn { background: #17a2b8; color: #fff; }
+        .achievements-btn { background: #6f42c1; color: #fff; }
+        .scratch-card-btn { background: #fd7e14; color: #fff; }
+        .scratch-card-container { position: relative; width: 300px; height: 150px; margin: 20px auto; border-radius: 10px; background: #fff; }
+        #prize-text { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1; }
+        #scratchCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: grabbing; border-radius: 10px; z-index: 2; }
+        #scratch-message { margin-top: 10px; font-size: 14px; color: #555; font-weight: bold; }
+        .prize-icon { width: 50px; height: 50px; background-color: #0d6efd; border-radius: 50%; margin-bottom: 8px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffc107'%3E%3Cpath d='M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm7 6c-1.65 0-3-1.35-3-3V5h6v6c0 1.65-1.35 3-3 3zm7-6c0 1.3-.84 2.4-2 2.82V7h2v1z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: center; background-size: 30px 30px; }
+        .win-text { font-size: 14px; color: #6c757d; }
+        .prize-amount { font-size: 24px; font-weight: bold; color: #212529; }
+        
+        #numberGrid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .number-btn {
+            padding: 10px 5px;
+            font-size: 16px;
+            font-weight: bold;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #f8f9fa;
+        }
+        .number-btn:disabled {
+            background-color: #6c757d;
+            color: white;
+            cursor: not-allowed;
+        }
+        .number-btn.selected {
+            background-color: #ffc107;
+            color: #212529;
+            border-color: #ffc107;
+        }
+        
+        @media screen and (max-width: 400px) {
+            body {
+                -webkit-text-size-adjust: 100%;
+            }
+            .wallet-box, .join-box, .prize-pool, .proofs-box {
+                margin: 10px auto;
+                padding: 8px;
+            }
+            .wallet-balance {
+                font-size: 16px;
+            }
+            .wallet-buttons button {
+                font-size: 12px;
+                padding: 6px 10px;
+            }
+            #numberGrid {
+                gap: 5px;
+            }
+            .number-btn {
+                font-size: 14px;
+                padding: 8px 4px;
+            }
+            .modal-content {
+                margin: 20% auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="loader" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; justify-content: center; align-items: center; z-index: 9999;">Loading...</div>
+    <section id="authSection" style="display:none;">
+        <div class="auth-wrap">
+            <div class="auth-tabs">
+                <button id="tabLogin" class="active" onclick="showTab('login')">Login</button>
+                <button id="tabSignup" onclick="showTab('signup')">Signup</button>
+            </div>
+            <div id="loginForm" class="auth-form">
+                <label>Email</label><input type="email" id="loginEmail" placeholder="you@example.com" />
+                <label>Password</label><input type="password" id="loginPassword" placeholder="Enter password" />
+                <button class="auth-btn" onclick="doLogin()">Login</button>
+            </div>
+            <div id="signupForm" class="auth-form" style="display:none;">
+                <label>Username</label><input type="text" id="signupUsername" placeholder="Choose a public username" />
+                <label>Email</label><input type="email" id="signupEmail" placeholder="you@example.com" />
+                <label>Password</label><input type="password" id="signupPassword" placeholder="Choose password" />
+                <button class="auth-btn" onclick="doSignup()">Create account</button>
+            </div>
+            <div style="text-align:center; margin-top: 20px; font-size: 14px;"><a href="#" onclick="openTerms()">Terms & Privacy</a></div>
+        </div>
+    </section>
+    <section id="appSection" style="display:none;">
+        
+        <!-- HEADER IS REMOVED FROM HERE -->
+
+        <div class="wallet-box">
+            <div id="walletBalance" class="wallet-balance">Your Coins: 0</div>
+            <div class="level-info">
+                <span id="levelDisplay">Level: 1</span> | <span id="xpDisplay">XP: 0/100</span>
+                <div class="xp-bar"><div id="xpBarFill" class="xp-bar-fill"></div></div>
+            </div>
+            <div class="wallet-buttons">
+                <button class="add-btn" onclick="earnCoins()">Get Coins</button>
+                <button class="history-btn" onclick="openHistory()">History</button>
+                <button id="myTicketBtn" class="my-ticket-btn">My Tickets: -</button>
+                <button class="leaderboard-btn" onclick="openLeaderboard()">Leaderboard</button>
+                <button class="achievements-btn" onclick="openAchievements()">Achievements</button>
+                <button id="scratchCardBtn" class="scratch-card-btn" onclick="openScratchCard()">Daily Reward</button>
+            </div>
+        </div>
+        <div class="wheel-container"><canvas id="wheel" width="300" height="300"></canvas><div class="pointer"></div></div>
+        <div id="timerDisplay">Next Spin In: 30s</div>
+        <div class="join-box">
+            <div style="font-size:14px;font-weight:600">20 Members Contest</div>
+            <div style="position:relative;height:4px;background:#eee;border-radius:3px;overflow:hidden;margin:6px 0">
+                <div id="joinFill" style="height:100%;background:linear-gradient(90deg,#28a745,#218838);border-radius:3px;width:0%; transition: width 1s linear;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:#555">
+                <span id="joinedCount">0 Joined</span><span id="spotsLeft">20 Spots Left</span>
+            </div>
+            <div style="font-size:14px; font-weight:bold; margin-top:10px;">Choose Your Lucky Number:</div>
+            <div id="numberGrid"></div>
+            <div style="font-size:12px;color:#666;margin-top:8px">Note: Coins are virtual and cannot be exchanged for money.</div>
+        </div>
+        <div id="result" style="margin-top:15px;font-size:15px;font-weight:700;color:#333; line-height: 1.5;">Waiting for spin...</div>
+        <div id="prizePool" class="prize-pool"></div>
+        <div class="proofs-box"><div id="proofList"></div></div>
+
+        <!-- LOGOUT BUTTON MOVED HERE -->
+        <div class="footer-logout-container">
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+
+    </section>
+    <!-- MODALS -->
+    <div id="historyModal" class="modal"><div class="modal-content"><span class="close" onclick="closeModal('historyModal')">×</span><h3>Activity History</h3><div id="historyList" style="max-height:200px;overflow-y:auto;text-align:left;font-size:13px"></div></div></div>
+    <div id="termsModal" class="modal"><div class="modal-content"><span class="close" onclick="closeModal('termsModal')">×</span><h3>Terms & Privacy</h3><div style="text-align:left;font-size:13px"><p>This app uses virtual coins for in-game participation. Coins are non-transferable and cannot be redeemed for real money.</p><p>Privacy Policy and Terms must be available on your Play Store listing.</p></div></div></div>
+    <div id="dailyBonusModal" class="modal"><div class="modal-content"><span class="close" onclick="closeModal('dailyBonusModal')">×</span><h3>Daily Login Bonus!</h3><p id="dailyBonusText"></p></div></div>
+    <div id="leaderboardModal" class="modal"><div class="modal-content"><span class="close" onclick="closeModal('leaderboardModal')">×</span><h3>Leaderboard</h3><div id="leaderboardList"></div></div></div>
+    <div id="achievementsModal" class="modal"><div class="modal-content"><span class="close" onclick="closeModal('achievementsModal')">×</span><h3>Achievements</h3><div id="achievementsList"></div></div></div>
+    <div id="scratchCardModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('scratchCardModal')">×</span>
+            <h3>Daily Scratch Card</h3>
+            <div class="scratch-card-container">
+                <div id="prize-text"></div>
+                <canvas id="scratchCanvas" width="300" height="150"></canvas>
+            </div>
+            <div id="scratch-message">Scratch here to reveal your prize!</div>
+        </div>
+    </div>
+    
+    <script>
+        // --- JAVASCRIPT IS UNCHANGED ---
+        const firebaseConfig = {
+           apiKey: "AIzaSyCSRrZXBlbA9sJ8sTvp0lthjvaqb1PetAA",
+           authDomain: "spingame-128e4.firebaseapp.com",
+           databaseURL: "https://spingame-128e4-default-rtdb.firebaseio.com",
+           projectId: "spingame-128e4",
+           storageBucket: "spingame-128e4.appspot.com",
+           messagingSenderId: "949432242610",
+           appId: "1:949432242610:web:27b223e1a210f024d514ab",
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth(), db = firebase.firestore();
+        let currentUser = null, coins = 0, userTickets = [];
+        let userProfile = { level: 1, xp: 0, joinCount: 0, achievements: [] };
+        let userUnsubscribe = null; 
+        let appInitialized = false;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            displayPrizePool();
+        });
+        
+        auth.onAuthStateChanged(user => {
+            document.getElementById('loader').style.display = 'none';
+            if (user) {
+                currentUser = user;
+                document.getElementById("authSection").style.display = "none";
+                document.getElementById("appSection").style.display = "block";
+                initAppForUser();
+            } else {
+                currentUser = null;
+                if (userUnsubscribe) userUnsubscribe(); 
+                appInitialized = false;
+                clearInterval(countdownInterval);
+                document.getElementById("authSection").style.display = "block";
+                document.getElementById("appSection").style.display = "none";
+                showTab('login');
+            }
+        });
+        
+        function initAppForUser() {
+            if (!currentUser || appInitialized) return;
+            
+            const userRef = db.collection("users").doc(currentUser.uid);
+            userUnsubscribe = userRef.onSnapshot(doc => {
+                if (!doc.exists) return; 
+                const data = doc.data();
+                coins = data.coins || 0;
+                userProfile = {
+                    level: data.level || 1, xp: data.xp || 0, joinCount: data.joinCount || 0,
+                    achievements: data.achievements || [], role: data.role || 'user',
+                    lastClaimedGetCoins: data.lastClaimedGetCoins || null,
+                    lastScratchTime: data.lastScratchTime || null, lastLogin: data.lastLogin || null
+                };
+                updateCoinsDisplay(); updateLevelDisplay();
+            });
+            
+            checkDailyLogin();
+            
+            if (!appInitialized) {
+                appInitialized = true;
+                loadProofs(); startNewRound(); drawWheel();
+            }
+        }
+
+        async function checkDailyLogin() {
+            const userRef = db.collection("users").doc(currentUser.uid);
+            const doc = await userRef.get();
+            if (!doc.exists) return;
+            const data = doc.data();
+            const today = new Date().setHours(0, 0, 0, 0);
+            const lastLoginDate = data.lastLogin ? new Date(data.lastLogin.toDate()).setHours(0, 0, 0, 0) : null;
+            if (lastLoginDate !== today) {
+                const bonus = 25;
+                await userRef.update({
+                    coins: firebase.firestore.FieldValue.increment(bonus),
+                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                await addTxn(currentUser.uid, 'Daily Bonus', bonus, 'Daily login reward', 'Success');
+                document.getElementById('dailyBonusText').innerText = `You received ${bonus} coins as your daily login bonus!`;
+                openModal('dailyBonusModal');
+            }
+            checkScratchCardStatus(data.lastScratchTime);
+        }
+
+        async function earnCoins() {
+            if (!currentUser) return alert("Login first.");
+            const userRef = db.collection("users").doc(currentUser.uid);
+            const now = new Date();
+            const oneHour = 60 * 60 * 1000;
+            const doc = await userRef.get();
+            const lastClaimTime = doc.data().lastClaimedGetCoins ? doc.data().lastClaimedGetCoins.toDate() : null;
+            if (lastClaimTime && (now.getTime() - lastClaimTime.getTime() < oneHour)) {
+                const timeLeft = oneHour - (now.getTime() - lastClaimTime.getTime());
+                const minutesLeft = Math.ceil(timeLeft / (60 * 1000));
+                return alert(`Please wait. You can claim again in about ${minutesLeft} minutes.`);
+            }
+            try {
+                const coinsToGive = 20;
+                await userRef.update({
+                    coins: firebase.firestore.FieldValue.increment(coinsToGive),
+                    lastClaimedGetCoins: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                await addTxn(currentUser.uid, 'Get Coins', coinsToGive, 'Hourly bonus', 'Success');
+                alert(`${coinsToGive} coins have been added to your wallet!`);
+            } catch (error) {
+                console.error("Error adding coins: ", error);
+                alert("Could not add coins. Error: " + error.message);
+            }
+        }
+        
+        const maxJoin=20;const wheelCanvas=document.getElementById("wheel"),wheelCtx=wheelCanvas.getContext("2d");const numSegments=20,segmentAngle=2*Math.PI/numSegments;let currentAngle=0;const prizeMap={1:25,2:15,3:15,4:8,5:7,6:6,7:5,8:4,9:4,10:4,11:3,12:3,13:3,14:3,15:3,16:2,17:2,18:2,19:2,20:2};const totalPrizePool=Object.values(prizeMap).reduce((s,v)=>s+v,0);const ROUND_DURATION=30;let timeLeft=ROUND_DURATION;let countdownInterval=null;let isSpinning=false;let allParticipantsInRound={};let scratchCardClaimed=true;let randomPrize=0;const scratchCanvas=document.getElementById('scratchCanvas'),scratchCtx=scratchCanvas.getContext('2d');let isDrawing=false;
+        function displayPrizePool(){const e=document.getElementById("prizePool");e.innerHTML=`<b>Prize Pool (Coins): ${totalPrizePool}</b> <br>Rank 1: ${prizeMap[1]} coins <br>Rank 2-3: ${prizeMap[2]} coins <br>Rank 4: ${prizeMap[4]} coins <br>Rank 5: ${prizeMap[5]} coins <br>Rank 6: ${prizeMap[6]} coins <br>Rank 7: ${prizeMap[7]} coins <br>Rank 8-10: ${prizeMap[8]} coins <br>Rank 11-15: ${prizeMap[11]} coins <br>Rank 16-20: ${prizeMap[16]} coins <br><small>Coins are virtual and non-transferable.</small>`}
+        function checkScratchCardStatus(e){const t=(new Date).setHours(0,0,0,0),a=e?new Date(e.toDate()).setHours(0,0,0,0):null,n=document.getElementById("scratchCardBtn");a===t?(scratchCardClaimed=true,n.disabled=true,n.innerText="Claimed Today"):(scratchCardClaimed=false,n.disabled=false,n.innerText="Daily Reward")}
+        function openScratchCard(){if(scratchCardClaimed)return alert("You have already claimed your daily reward. Come back tomorrow!");setupScratchCard(),openModal("scratchCardModal")}
+        function setupScratchCard(){const e=[5,10,15,25,50];randomPrize=e[Math.floor(Math.random()*e.length)];const t=document.getElementById("prize-text"),a=document.getElementById("scratchCanvas");t.innerHTML="",a.style.display="block",scratchCtx.globalCompositeOperation="source-over",scratchCtx.clearRect(0,0,scratchCanvas.width,scratchCanvas.height);const n=scratchCtx.createLinearGradient(0,0,scratchCanvas.width,0);n.addColorStop(0,"#bbbbbb"),n.addColorStop(.5,"#999999"),n.addColorStop(1,"#bbbbbb"),scratchCtx.fillStyle=n,scratchCtx.fillRect(0,0,scratchCanvas.width,scratchCanvas.height),document.getElementById("scratch-message").innerText="Scratch here to reveal your prize!"}
+        function getScratchPos(e,t){const a=e.getBoundingClientRect(),n=e.width/a.width,r=e.height/a.height,c=t.touches?t.touches[0].clientX:t.clientX,o=t.touches?t.touches[0].clientY:t.clientY;return{x:(c-a.left)*n,y:(o-a.top)*r}}
+        function scratch(e){if(!isDrawing||scratchCardClaimed)return;e.preventDefault();const t=getScratchPos(scratchCanvas,e);scratchCtx.globalCompositeOperation="destination-out",scratchCtx.beginPath(),scratchCtx.arc(t.x,t.y,20,0,2*Math.PI),scratchCtx.fill()}
+        function checkScratchProgress(){if(scratchCardClaimed)return;const e=scratchCtx.getImageData(0,0,scratchCanvas.width,scratchCanvas.height).data;let t=0;for(let a=3;a<e.length;a+=4)e[a]<128&&t++;t/(e.length/4)*100>60&&claimScratchPrize()}
+        function claimScratchPrize(){if(scratchCardClaimed)return;scratchCardClaimed=true,isDrawing=false,document.getElementById("scratchCanvas").style.display="none";const e=document.getElementById("prize-text");e.innerHTML=`\n                <div class="prize-icon"></div>\n                <div class="win-text">You've won</div>\n                <div class="prize-amount">${randomPrize} Coins</div>\n            `,db.collection("users").doc(currentUser.uid).update({coins:firebase.firestore.FieldValue.increment(randomPrize),lastScratchTime:firebase.firestore.FieldValue.serverTimestamp()}).then(()=>{addTxn(currentUser.uid,"Scratch Reward",randomPrize,"Daily scratch card win","Success");const e=document.getElementById("scratchCardBtn");e.disabled=true,e.innerText="Claimed Today",document.getElementById("scratch-message").innerHTML=`🎉 <b>Congratulations!</b> ${randomPrize} coins have been added to your wallet.`})}
+        scratchCanvas.addEventListener("mousedown",e=>{isDrawing=true,scratch(e)}),scratchCanvas.addEventListener("touchstart",e=>{isDrawing=true,scratch(e)}),scratchCanvas.addEventListener("mousemove",scratch),scratchCanvas.addEventListener("touchmove",scratch),scratchCanvas.addEventListener("mouseup",()=>{isDrawing&&(isDrawing=false,checkScratchProgress())}),scratchCanvas.addEventListener("touchend",()=>{isDrawing&&(isDrawing=false,checkScratchProgress())}),scratchCanvas.addEventListener("mouseleave",()=>{isDrawing&&(isDrawing=false,checkScratchProgress())});
+        function getXPForNextLevel(e){return 100*Math.pow(e,1.5)}
+        function addXP(e){userProfile.xp+=e;const t=getXPForNextLevel(userProfile.level);if(userProfile.xp>=t){userProfile.level++,userProfile.xp-=t;const a=50*userProfile.level;db.collection("users").doc(currentUser.uid).update({coins:firebase.firestore.FieldValue.increment(a)}),addTxn(currentUser.uid,"Level Up Bonus",a,`Reached Level ${userProfile.level}`,"Success"),alert(`Congratulations! You reached Level ${userProfile.level} and received ${a} coins!`),checkAchievements()}db.collection("users").doc(currentUser.uid).update({xp:userProfile.xp,level:userProfile.level}),updateLevelDisplay()}
+        function updateLevelDisplay(){const e=getXPForNextLevel(userProfile.level);document.getElementById("levelDisplay").innerText=`Level: ${userProfile.level}`,document.getElementById("xpDisplay").innerText=`XP: ${Math.floor(userProfile.xp)}/${Math.floor(e)}`,document.getElementById("xpBarFill").style.width=`${userProfile.xp/e*100}%`}
+        const ALL_ACHIEVEMENTS={join10:{title:"Beginner Spinner",description:"Join the contest 10 times."},level5:{title:"Apprentice",description:"Reach Level 5."},win500:{title:"Coin Collector",description:"Win over 500 coins in total."}};function checkAchievements(){userProfile.joinCount>=10&&!userProfile.achievements.includes("join10")&&unlockAchievement("join10"),userProfile.level>=5&&!userProfile.achievements.includes("level5")&&unlockAchievement("level5")}
+        function unlockAchievement(e){userProfile.achievements.push(e);const t=100;db.collection("users").doc(currentUser.uid).update({achievements:firebase.firestore.FieldValue.arrayUnion(e),coins:firebase.firestore.FieldValue.increment(t)}),addTxn(currentUser.uid,"Achievement",t,`Unlocked: ${ALL_ACHIEVEMENTS[e].title}`,"Success"),alert(`Achievement Unlocked: ${ALL_ACHIEVEMENTS[e].title}! You received ${t} coins.`)}
+        function openAchievements(){const e=document.getElementById("achievementsList");e.innerHTML="";for(const t in ALL_ACHIEVEMENTS){const a=ALL_ACHIEVEMENTS[t],n=userProfile.achievements.includes(t),r=document.createElement("div");r.className=n?"achievement-item unlocked":"achievement-item",r.innerHTML=`<b>${a.title}</b><br><small>${a.description}</small>`,e.appendChild(r)}openModal("achievementsModal")}
+        async function openLeaderboard(){const e=document.getElementById("leaderboardList");e.innerHTML="Loading...",openModal("leaderboardModal");try{const t=await db.collection("users").orderBy("coins","desc").limit(10).get();if(e.innerHTML="",t.empty)return void(e.innerHTML="No players on the leaderboard yet.");let a=1;t.forEach(t=>{const n=t.data(),r=document.createElement("div");r.className="leaderboard-item",r.innerHTML=`<span><b>#${a}</b> ${n.username}</span> <span>${n.coins} Coins</span>`,e.appendChild(r),a++})}catch(t){e.innerHTML="Could not load leaderboard.",console.error(t)}}
+        function startNewRound(){isSpinning=false,timeLeft=30,allParticipantsInRound={},userTickets=[],document.getElementById("result").innerHTML="Waiting for spin...",document.getElementById("joinFill").style.width="0%",updateJoinedCountDisplay(),clearInterval(countdownInterval),countdownInterval=setInterval(tick,1e3),tick()}
+        function tick(){if(timeLeft>=0){document.getElementById("timerDisplay").innerText=`Next Spin In: ${timeLeft}s`,document.getElementById("joinFill").style.width=`${(30-timeLeft)/30*100}%`,0===timeLeft&&triggerSpin(),timeLeft--} else {clearInterval(countdownInterval)}}
+        function triggerSpin(){isSpinning=true,clearInterval(countdownInterval);const e=document.querySelectorAll(".number-btn");e.forEach(e=>e.disabled=true),document.getElementById("result").innerHTML="Spinning now...",spinWheel()}
+        
+        function selectNumber(number) {
+            if(!currentUser) return alert("Please login first.");
+            if(isSpinning) return;
+            if (number in allParticipantsInRound) return alert("This number is already taken!");
+            if(userTickets.length >= 10) return alert("You can select a maximum of 10 numbers.");
+            if(coins < 5) return alert("Not enough coins. Each number costs 5 coins.");
+
+            db.collection("users").doc(currentUser.uid).update({
+                coins: firebase.firestore.FieldValue.increment(-5),
+                joinCount: firebase.firestore.FieldValue.increment(1)
+            }).then(() => {
+                allParticipantsInRound[number] = currentUser.uid;
+                userTickets.push(number);
+                addXP(10);
+                checkAchievements();
+                addTxn(currentUser.uid, 'Join Contest', 5, `Selected number #${number}`, 'Success');
+                updateJoinedCountDisplay();
+            }).catch(error => {
+                console.error("Error joining contest: ", error);
+                alert("Could not join contest. Please try again.");
+            });
+        }
+
+        function updateJoinedCountDisplay(){
+            const joinedCount = Object.keys(allParticipantsInRound).length;
+            document.getElementById("joinedCount").innerText = `${joinedCount} Joined`;
+            document.getElementById("spotsLeft").innerText = `${20 - joinedCount} Spots Left`;
+            document.getElementById("myTicketBtn").innerText = userTickets.length > 0 ? `My Numbers: ${userTickets.sort((a, b) => a - b).join(', ')}` : 'My Tickets: -';
+            
+            const grid = document.getElementById('numberGrid');
+            grid.innerHTML = '';
+            for (let i = 1; i <= 20; i++) {
+                const button = document.createElement('button');
+                button.innerText = i;
+                button.className = 'number-btn';
+                button.onclick = () => selectNumber(i);
+
+                if (i in allParticipantsInRound) {
+                    button.disabled = true;
+                }
+                if (userTickets.includes(i)) {
+                    button.classList.add('selected');
+                }
+                grid.appendChild(button);
+            }
+        }
+        
+        function drawWheel(){wheelCtx.clearRect(0,0,300,300);for(let e=0;e<20;e++)wheelCtx.beginPath(),wheelCtx.moveTo(150,150),wheelCtx.arc(150,150,150,currentAngle+e*segmentAngle,currentAngle+(e+1)*segmentAngle),wheelCtx.fillStyle=e%2==0?"#4caf50":"#ffffff",wheelCtx.fill(),wheelCtx.stroke(),wheelCtx.save(),wheelCtx.translate(150,150),wheelCtx.rotate(currentAngle+e*segmentAngle+segmentAngle/2),wheelCtx.textAlign="right",wheelCtx.fillStyle="#000",wheelCtx.font="14px Arial",wheelCtx.fillText(e+1,140,5),wheelCtx.restore()}
+        let spinTimeoutId=null;function spinWheel(){spinTimeoutId=setTimeout(()=>handleSpinFailure("Timeout"),16e3);let e=0,t=12e3;const a=10+5*Math.random(),n=360*a;function r(c){e||(e=c);const o=c-e;if(o>=t)return currentAngle=n*Math.PI/180,drawWheel(),void stopRotateWheel();const i=o/t,l=1-Math.pow(1-i,4);currentAngle=n*l*Math.PI/180,drawWheel(),requestAnimationFrame(r)}requestAnimationFrame(r)}
+        function stopRotateWheel(){clearTimeout(spinTimeoutId);const e=currentAngle*180/Math.PI%360,t=(360-e+270)%360,a=Math.floor(t/18),n=a+1,r={},c=[];r[n]={rank:1,prize:prizeMap[1]},c.push(n);const o=1===n?20:n-1;r[o]={rank:2,prize:prizeMap[2]},c.push(o);const i=20===n?1:n+1;r[i]={rank:3,prize:prizeMap[3]},c.push(i);let l=4;for(let s=1;s<=20;s++)c.includes(s)||(r[s]={rank:l,prize:prizeMap[l]},l++);let u=0,d=[];userTickets.forEach(e=>{r[e]&&(u+=r[e].prize,d.push(`Number #${e} won Rank ${r[e].rank} (${r[e].prize} coins)`))}),u>0?(db.collection("users").doc(currentUser.uid).update({coins:firebase.firestore.FieldValue.increment(u)}).then(()=>addTxn(currentUser.uid,"Contest Reward",u,`Won with numbers. Rank1: #${n}`,"Success")),document.getElementById("result").innerHTML=`🎉 You won ${u} coins!<br><small>${d.join(", ")}</small>`):document.getElementById("result").innerHTML=`Spin Finished! Here are the top winners:<br><small><b>Rank 1:</b> Number #${n} wins ${prizeMap[1]} coins</small><br><small><b>Rank 2:</b> Number #${o} wins ${prizeMap[2]} coins</small><br><small><b>Rank 3:</b> Number #${i} wins ${prizeMap[3]} coins</small>`,setTimeout(startNewRound,8e3)}
+        function handleSpinFailure(e){clearTimeout(spinTimeoutId),alert("Spin issue: "+e+". Contest will reset."),startNewRound()}
+        function doSignup(){const e=document.getElementById("signupUsername").value.trim(),t=document.getElementById("signupEmail").value.trim(),a=document.getElementById("signupPassword").value.trim();e&&t&&a?auth.createUserWithEmailAndPassword(t,a).then(a=>{db.collection("users").doc(a.user.uid).set({username:e,email:t,coins:100,lastLogin:firebase.firestore.FieldValue.serverTimestamp(),lastScratchTime:null,level:1,xp:0,joinCount:0,achievements:[],role:"user",lastClaimedGetCoins:null}).then(()=>{addTxn(a.user.uid,"Signup Bonus",100,"Welcome Bonus","Success"),alert("Account created! You received 100 coins as signup bonus.")})}).catch(e=>alert("Error: "+e.message)):alert("Please fill all fields.")}
+        function doLogin(){const e=document.getElementById("loginEmail").value.trim(),t=document.getElementById("loginPassword").value.trim();e&&t?auth.signInWithEmailAndPassword(e,t).catch(e=>alert("Error: "+e.message)):alert("Enter email & password.")}
+        function logout(){auth.signOut()}
+        function showTab(e){document.getElementById("tabLogin").classList.toggle("active","login"===e),document.getElementById("tabSignup").classList.toggle("active","signup"===e),document.getElementById("loginForm").style.display="login"===e?"block":"none",document.getElementById("signupForm").style.display="signup"===e?"block":"none"}
+        function updateCoinsDisplay(){document.getElementById("walletBalance").innerText="Your Coins: "+coins}
+        async function addTxn(e,t,a,n,r){try{await db.collection("transactions").add({userId:e,type:t,amount:parseFloat(a),details:n,status:r,timestamp:firebase.firestore.FieldValue.serverTimestamp()})}catch(c){console.error("Failed to add transaction:",c)}}
+        async function openHistory(){if(!currentUser)return;openModal("historyModal");const e=document.getElementById("historyList");e.innerHTML="Loading...";try{const t=await db.collection("transactions").where("userId","==",currentUser.uid).orderBy("timestamp","desc").limit(50).get();if(e.innerHTML="",t.empty)return void(e.innerHTML="<p>No activity yet.</p>");t.forEach(t=>{const a=t.data(),n=a.timestamp&&a.timestamp.toDate?a.timestamp.toDate().toLocaleString():"N/A",r=document.createElement("div");r.style.cssText="border-bottom:1px solid #eee;padding:6px 0;",r.innerHTML=`<b>${a.type}</b> - ${a.amount} coins<br><small>${a.details} | ${n}</small>`,e.appendChild(r)})}catch(t){e.innerHTML="<p>Could not load history.</p>",console.error("History Error:",t)}}
+        function loadProofs(){const e=document.getElementById("proofList");e.innerHTML="",db.collection("winners").orderBy("timestamp","desc").limit(20).get().then(t=>{if(t.empty){const a=document.createElement("div");return a.className="proof-item",a.innerText="Recent winners will appear here when available.",void e.appendChild(a)}t.forEach(t=>{const a=t.data(),n=document.createElement("div");n.className="proof-item";const r=a.name?a.name.substring(0,3)+"***":"User***";n.innerText=`${r} won ${a.amount} coins`,e.appendChild(n)})}).catch(t=>{const a=document.createElement("div");a.className="proof-item",a.innerText="Proofs unavailable.",e.appendChild(a),console.log("No winners collection or error:",t)})}
+        function openModal(e){document.getElementById(e).style.display="block"}
+        function closeModal(e){document.getElementById(e).style.display="none"}
+        function openTerms(){openModal('termsModal')}
+    </script>
+</body>
+</html>
