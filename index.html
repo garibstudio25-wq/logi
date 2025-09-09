@@ -9,15 +9,37 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <style>
-        /* Complete CSS */
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f4f4f9; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .auth-wrap { max-width: 420px; width: 90%; margin: 20px auto; background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0, 0, 0, .12); padding: 18px; text-align: left; }
-        .auth-tabs { display: flex; gap: 8px; margin-bottom: 10px; }
-        .auth-tabs button { flex: 1; padding: 10px; border: none; border-radius: 6px; background: #e9ecef; cursor: pointer; font-weight: 600; }
+        /* Complete and Final CSS */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            /* NEW: Professional Background */
+            background-image: url('https://images.pexels.com/photos/1638324/pexels-photo-1638324.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        .auth-wrap {
+            max-width: 420px;
+            width: 90%;
+            margin: 20px auto;
+            background: rgba(255, 255, 255, 0.98); /* Slightly transparent white for better look */
+            border-radius: 12px; /* More rounded corners */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* Stronger shadow */
+            padding: 24px;
+            text-align: left;
+        }
+        .auth-tabs { display: flex; gap: 8px; margin-bottom: 15px; }
+        .auth-tabs button { flex: 1; padding: 10px; border: none; border-radius: 8px; background: #e9ecef; cursor: pointer; font-weight: 600; font-size: 15px; }
         .auth-tabs button.active { background: #28a745; color: #fff; }
-        .auth-form label { display: block; font-size: 13px; margin-top: 8px; color: #222; }
-        .auth-form input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; margin-top: 4px; box-sizing: border-box; }
-        .auth-form .auth-btn { width: 100%; margin-top: 12px; background: #28a745; color: #fff; border: none; border-radius: 6px; padding: 10px; cursor: pointer; font-weight: 600; }
+        .auth-form label { display: block; font-size: 14px; margin-top: 10px; color: #333; font-weight: 600; }
+        .auth-form input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; margin-top: 5px; box-sizing: border-box; font-size: 15px; }
+        .auth-form .auth-btn { width: 100%; margin-top: 15px; background: #28a745; color: #fff; border: none; border-radius: 8px; padding: 12px; cursor: pointer; font-weight: 600; font-size: 16px; }
         .forgot-link-container { text-align: center; margin-top: 15px; }
         .forgot-link { font-size: 13px; color: #28a745; text-decoration: none; cursor: pointer; }
         .forgot-link:hover { text-decoration: underline; }
@@ -34,7 +56,7 @@
 </head>
 <body>
 
-    <!-- Complete HTML Structure -->
+    <!-- Complete and Final HTML Structure -->
     <section id="authSection">
         <div class="auth-wrap">
             <div class="auth-tabs">
@@ -80,7 +102,7 @@
     </div>
     
     <script>
-        // Complete and Correct JavaScript
+        // Complete and Final JavaScript
 
         const firebaseConfig = {
            apiKey: "AIzaSyCSRrZXBlbA9sJ8sTvp0lthjvaqb1PetAA",
@@ -102,7 +124,6 @@
         function closeAlert() {
             document.getElementById('alertModal').style.display = 'none';
         }
-
         function showTab(tabName) {
             document.getElementById("tabLogin").classList.toggle("active", tabName === 'login');
             document.getElementById("tabSignup").classList.toggle("active", tabName === 'signup');
@@ -119,6 +140,7 @@
             showAlert("Terms and Privacy policies page should open here.");
         }
 
+        // UPDATED: Login function with single error message
         function doLogin() {
             const email = document.getElementById("loginEmail").value.trim();
             const password = document.getElementById("loginPassword").value.trim();
@@ -133,18 +155,8 @@
                     }
                 })
                 .catch(error => {
-                    let userMessage = "An unexpected error occurred. Please try again.";
-                    switch (error.code) {
-                        case 'auth/user-not-found':
-                        case 'auth/wrong-password':
-                        case 'auth/invalid-credential':
-                            userMessage = "Invalid email or password. Please try again.";
-                            break;
-                        case 'auth/invalid-email':
-                            userMessage = "The email format is incorrect. Please check your email.";
-                            break;
-                    }
-                    showAlert(userMessage);
+                    // This is the change: A single message for all login errors.
+                    showAlert("Invalid email or password. Please try again.");
                 });
         }
 
